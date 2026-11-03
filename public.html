@@ -1,161 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver App - Cyber Cockpit</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <!-- Google Fonts for futuristic look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #05050c;
+      color: #e0e6ed;
+      overflow: hidden;
+      position: relative;
+    }
 
-        .login-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin: 20px 0;
-        }
+    /* Animated Cyber Background */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: 
+        radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 20% 20%, rgba(255, 0, 127, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(112, 0, 255, 0.15) 0%, transparent 40%);
+      animation: rotateBg 20s linear infinite;
+      z-index: 1;
+    }
 
-        input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
+    /* Grid Overlay */
+    body::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 30px 30px;
+      z-index: 2;
+      pointer-events: none;
+    }
 
-        .ride-notification {
-            background-color: #e7f3ff;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            animation: slideIn 0.3s ease-in;
-        }
+    @keyframes rotateBg {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        .ride-notification h3 {
-            color: #007bff;
-            margin-top: 0;
-        }
+    .container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      padding: 35px 30px;
+      background: rgba(13, 14, 27, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(0, 243, 255, 0.2);
+      box-shadow: 
+        0 0 30px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(0, 243, 255, 0.15),
+        inset 0 0 15px rgba(255, 255, 255, 0.03);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-        .ride-details {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
+    .container:hover {
+      border-color: rgba(0, 243, 255, 0.5);
+      box-shadow: 
+        0 0 50px rgba(0, 0, 0, 0.9),
+        0 0 35px rgba(0, 243, 255, 0.3),
+        inset 0 0 25px rgba(255, 255, 255, 0.05);
+    }
 
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-    </style>
+    h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.6), 0 0 20px rgba(0, 243, 255, 0.4);
+    }
+
+    h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1.5px;
+      color: #a0aec0;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .status {
+      padding: 10px 16px;
+      border-radius: 50px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+
+    .status::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status.connected {
+      background: rgba(0, 255, 170, 0.1);
+      color: #00ffaa;
+      border: 1px solid rgba(0, 255, 170, 0.4);
+      box-shadow: 0 0 15px rgba(0, 255, 170, 0.2);
+    }
+
+    .status.connected::before {
+      background: #00ffaa;
+      box-shadow: 0 0 10px #00ffaa;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status.disconnected {
+      background: rgba(255, 0, 85, 0.1);
+      color: #ff0055;
+      border: 1px solid rgba(255, 0, 85, 0.4);
+      box-shadow: 0 0 15px rgba(255, 0, 85, 0.2);
+    }
+
+    .status.disconnected::before {
+      background: #ff0055;
+      box-shadow: 0 0 10px #ff0055;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: #00f3ff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    input::placeholder {
+      color: #5a6578;
+    }
+
+    input:focus {
+      background: rgba(0, 243, 255, 0.05);
+      border-color: #00f3ff;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #00f3ff 0%, #0066ff 100%);
+      color: #000;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.8);
+      background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    /* Driver Dashboard Glass Card */
+    #driverDetails {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
+    }
+
+    #driverInfo {
+      background: rgba(0, 243, 255, 0.05);
+      border: 1px dashed rgba(0, 243, 255, 0.3);
+      padding: 15px;
+      border-radius: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      color: #00ffaa;
+      text-shadow: 0 0 8px rgba(0, 255, 170, 0.5);
+      word-break: break-all;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚗 Driver App</h1>
-        <div id="connectionStatus" class="status disconnected">
-            Disconnected from server
-        </div>
+  <div class="container">
+    <h2>🚗 Driver App</h2>
+    <div id="connectionStatus" class="status disconnected">Disconnected from server</div>
+
+    <div id="loginSection">
+      <h3>Driver Login</h3>
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email" value="driver10@example.com">
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Password" value="password123">
+      </div>
+      <button onclick="login()">Login</button>
     </div>
 
-    <div class="container">
-        <h2>Driver Login</h2>
-        <div class="login-form">
-            <input type="email" id="email" placeholder="Enter Email" value="driver1@example.com">
-            <input type="password" id="password" placeholder="Enter Password" value="password123">
-            <button id="loginBtn" onclick="login()">Login</button>
-        </div>
+    <div id="driverDetails" style="display: none; margin-top: 20px;">
+      <h3>Driver Dashboard</h3>
+      <p id="driverInfo"></p>
     </div>
+  </div>
 
-    <div class="container">
-        <div id="rideNotifications"></div>
-    </div>
+  <script>
+    let socket;
+    let currentRideNotifications = new Map();
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        let socket = null;
-        let currentDriverId = null;
-        let currentRideNotifications = new Map();
+    function connectToWebSocket() {
+      if (!socket) {
+        socket = io('http://localhost:3001'); // Pointing to port 3001
+        setSocketUpEvents();
+      }
+    }
 
-        function connectToWebSocket() {
-            if (!socket) {
-                socket = io('http://localhost:3001');
-                setupSocketEvents();
-            }
+    function setSocketUpEvents() {
+      socket.on('login-success', (data) => {
+        console.log('Login successful via WebSocket:', data);
+      });
+
+      socket.on('new-ride-notification', (data) => {
+        console.log('New ride notification:', data);
+        alert(`New ride notification received! Booking ID: ${data.bookingId || data._id}`);
+      });
+
+      socket.on('connect', () => {
+        updateConnectionStatus(true);
+      });
+
+      socket.on('disconnect', () => {
+        updateConnectionStatus(false);
+      });
+    }
+
+    function updateConnectionStatus(connected) {
+      const statusEl = document.getElementById('connectionStatus');
+      if (connected) {
+        statusEl.textContent = 'Connected to server';
+        statusEl.className = 'status connected';
+      } else {
+        statusEl.textContent = 'Disconnected from server';
+        statusEl.className = 'status disconnected';
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('http://localhost:4000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const resData = await response.json();
+        // Correctly read token from top-level or nested data object
+        const token = resData.token || (resData.data && resData.data.token);
+
+        if (response.ok && token) {
+          document.getElementById('loginSection').style.display = 'none';
+          document.getElementById('driverDetails').style.display = 'block';
+          document.getElementById('driverInfo').textContent = `Logged in as: ${email}`;
+
+          connectToWebSocket();
+          socket.emit('register-driver', { token: token });
+        } else {
+          alert(resData.message || resData.error || 'Login failed');
         }
-
-        function setupSocketEvents() {
-            socket.on('login-success', (data) => {
-                document.getElementById('loginBtn').disabled = true;
-                document.getElementById('email').disabled = true;
-                document.getElementById('password').disabled = true;
-            });
-
-            socket.on('new-ride-notification', (data) => {
-                currentRideNotifications.set(data.rideId, data);
-                const container = document.getElementById('rideNotifications');
-                if (currentRideNotifications.size === 0) {
-                    container.innerHTML = '<p>No active ride notifications</p>';
-                    return;
-                }
-
-                container.innerHTML = '';
-                currentRideNotifications.forEach((notification, rideId) => {
-                    const rideRequest = document.createElement('div');
-                    rideRequest.className = 'ride-notification';
-                    rideRequest.id = `ride-${rideId}`;
-                    rideRequest.innerHTML = `
-                        <p>Booking ID: ${rideId}</p>
-                        <p>Source: ${notification.rideInfo.source.latitude}, ${notification.rideInfo.source.longitude}</p>
-                        <p>Destination: ${notification.rideInfo.destination.latitude}, ${notification.rideInfo.destination.longitude}</p>
-                        <p>Fare: ${notification.rideInfo.estimatedFare || notification.rideInfo.fare}</p>
-                        <button onclick="confirmRide('${rideId}')">Confirm Booking</button>
-                    `;
-                    container.appendChild(rideRequest);
-                });
-            });
-        }
-
-        async function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            try {
-                const response = await fetch('http://localhost:4000/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await response.json();
-                alert('Logged in successfully');
-
-                currentDriverId = data.data.user._id;
-                connectToWebSocket();
-
-                socket.emit('driver-login', {
-                    driverId: data.data.user._id,
-                    name: data.data.user.name || email.split('@')[0]
-                });
-
-                document.getElementById('loginBtn').disabled = true;
-                document.getElementById('email').disabled = true;
-                document.getElementById('password').disabled = true;
-            } catch (error) {
-                console.error('Login error:', error);
-                alert(`Login failed: ${error.message}`);
-            }
-        }
-    </script>
+      } catch (error) {
+        console.error('Error logging in:', error);
+        alert('Failed to connect to backend server');
+      }
+    }
+  </script>
 </body>
 </html>
