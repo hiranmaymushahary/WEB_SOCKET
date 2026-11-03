@@ -6,7 +6,11 @@ const setDriverSocket = require('./services/driverService');
 // Import a service function to remove/clear the driver socket mapping when disconnected
 const { removeDriverSocket } = require('./services/driverService'); 
 
+const express = require('express');
+
 app.use('/api' , notificationRoutes);
+
+app.use(express.static('.'));
 
 io.on('connection' , (socket) => {
     console.log('New connection: ' , socket.id);

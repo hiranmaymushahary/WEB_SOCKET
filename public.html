@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .login-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .ride-notification {
+            background-color: #e7f3ff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            animation: slideIn 0.3s ease-in;
+        }
+
+        .ride-notification h3 {
+            color: #007bff;
+            margin-top: 0;
+        }
+
+        .ride-details {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Driver App</h1>
+        <div id="connectionStatus" class="status disconnected">
+            Disconnected from server
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Driver Login</h2>
+        <div class="login-form">
+            <input type="email" id="email" placeholder="Enter Email" value="driver1@example.com">
+            <input type="password" id="password" placeholder="Enter Password" value="password123">
+            <button id="loginBtn" onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="rideNotifications"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let currentDriverId = null;
+        let currentRideNotifications = new Map();
+
+        function connectToWebSocket() {
+            if (!socket) {
+                socket = io('http://localhost:3001');
+                setupSocketEvents();
+            }
+        }
+
+        function setupSocketEvents() {
+            socket.on('login-success', (data) => {
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('email').disabled = true;
+                document.getElementById('password').disabled = true;
+            });
+
+            socket.on('new-ride-notification', (data) => {
+                currentRideNotifications.set(data.rideId, data);
+                const container = document.getElementById('rideNotifications');
+                if (currentRideNotifications.size === 0) {
+                    container.innerHTML = '<p>No active ride notifications</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                currentRideNotifications.forEach((notification, rideId) => {
+                    const rideRequest = document.createElement('div');
+                    rideRequest.className = 'ride-notification';
+                    rideRequest.id = `ride-${rideId}`;
+                    rideRequest.innerHTML = `
+                        <p>Booking ID: ${rideId}</p>
+                        <p>Source: ${notification.rideInfo.source.latitude}, ${notification.rideInfo.source.longitude}</p>
+                        <p>Destination: ${notification.rideInfo.destination.latitude}, ${notification.rideInfo.destination.longitude}</p>
+                        <p>Fare: ${notification.rideInfo.estimatedFare || notification.rideInfo.fare}</p>
+                        <button onclick="confirmRide('${rideId}')">Confirm Booking</button>
+                    `;
+                    container.appendChild(rideRequest);
+                });
+            });
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch('http://localhost:4000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                alert('Logged in successfully');
+
+                currentDriverId = data.data.user._id;
+                connectToWebSocket();
+
+                socket.emit('driver-login', {
+                    driverId: data.data.user._id,
+                    name: data.data.user.name || email.split('@')[0]
+                });
+
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('email').disabled = true;
+                document.getElementById('password').disabled = true;
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(`Login failed: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
